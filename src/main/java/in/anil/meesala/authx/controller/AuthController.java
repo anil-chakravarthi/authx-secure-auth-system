@@ -1,57 +1,73 @@
 package in.anil.meesala.authx.controller;
 
-import java.util.Map;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
-
-import in.anil.meesala.authx.dto.LoginRequest;
-import in.anil.meesala.authx.dto.RegisterRequest;
-import in.anil.meesala.authx.dto.UserResponse;
 import in.anil.meesala.authx.entity.User;
+import in.anil.meesala.authx.repository.UserRepository;
 import in.anil.meesala.authx.security.JwtUtil;
 import in.anil.meesala.authx.service.UserService;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final UserService userService;
+    private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public AuthController(UserService userService, JwtUtil jwtUtil) {
-        this.userService = userService;
+    public AuthController(AuthenticationManager authenticationManager,
+                          JwtUtil jwtUtil,
+                          UserRepository userRepository,
+                          UserService userService) {
+        this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
-    // Register
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
-
-        User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
-
-        UserResponse savedUser = userService.registerUser(user);
-
-        return ResponseEntity.ok(savedUser);
-    }
-
-    // Login
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest request) {
+    public Map<String, Object> login(@RequestBody Map<String, String> request) {
 
-        UserResponse user = userService.loginUser(request.getEmail(), request.getPassword());
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.get("email"),
+                        request.get("password")
+                )
+        );
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
+        User user = userRepository.findByEmail(request.get("email"))
+                .orElseThrow();
 
-        return ResponseEntity.ok(Map.of(
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole()
+        );
+
+        return Map.of(
                 "token", token,
+                "role", user.getRole(),
                 "email", user.getEmail(),
-                "role", user.getRole()
-        ));
+                "loginTime", System.currentTimeMillis()
+        );
+    }
+
+    @PostMapping("/change-password")
+    public Map<String, String> changePassword(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+
+        userService.changePassword(
+                authentication.getName(),
+                request.get("oldPassword"),
+                request.get("newPassword")
+        );
+
+        return Map.of("message", "Password updated successfully");
     }
 }

@@ -118,4 +118,24 @@ public class UserService {
 
         return mapToUserResponse(updatedUser);
     }
+
+    // 🔐 CHANGE PASSWORD (NEW)
+    public void changePassword(String email, String oldPassword, String newPassword) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    logger.warn("Password change failed - user not found: {}", email);
+                    return new UserNotFoundException("User not found");
+                });
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            logger.warn("Password change failed - incorrect old password for: {}", email);
+            throw new InvalidCredentialsException("Old password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        logger.info("Password updated successfully for: {}", email);
+    }
 }
