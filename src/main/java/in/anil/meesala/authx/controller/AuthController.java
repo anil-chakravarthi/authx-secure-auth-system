@@ -51,15 +51,19 @@ public class AuthController {
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> request) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.get("email"),
-                        request.get("password")
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.get("email"),
+                            request.get("password")
+                    )
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid email or password");
+        }
 
         User user = userRepository.findByEmail(request.get("email"))
-                .orElseThrow();
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtUtil.generateToken(
                 user.getEmail(),
@@ -74,7 +78,7 @@ public class AuthController {
         );
     }
 
-    // ✅ CHANGE PASSWORD
+    // CHANGE PASSWORD
     @PostMapping("/change-password")
     public Map<String, String> changePassword(
             @RequestBody Map<String, String> request,
