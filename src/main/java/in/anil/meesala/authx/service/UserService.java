@@ -59,7 +59,7 @@ public class UserService {
         return mapToUserResponse(savedUser);
     }
 
-    // Login
+    // Login (existing - can remain or be unused)
     public UserResponse loginUser(String email, String password) {
 
         User user = userRepository.findByEmail(email)
@@ -76,6 +76,11 @@ public class UserService {
         logger.info("User logged in successfully: {}", email);
 
         return mapToUserResponse(user);
+    }
+
+    // Add this method (used by AuthController)
+    public boolean checkPassword(String rawPassword, String encodedPassword) {
+        return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 
     // Get all users
@@ -119,7 +124,7 @@ public class UserService {
         return mapToUserResponse(updatedUser);
     }
 
-    // 🔐 CHANGE PASSWORD (NEW)
+    // Change password
     public void changePassword(String email, String oldPassword, String newPassword) {
 
         User user = userRepository.findByEmail(email)

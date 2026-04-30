@@ -9,8 +9,6 @@ import in.anil.meesala.authx.service.UserService;
 
 import jakarta.validation.Valid;
 
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,16 +18,13 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final UserService userService;
 
-    public AuthController(AuthenticationManager authenticationManager,
-                          JwtUtil jwtUtil,
+    public AuthController(JwtUtil jwtUtil,
                           UserRepository userRepository,
                           UserService userService) {
-        this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -47,23 +42,19 @@ public class AuthController {
         return userService.registerUser(user);
     }
 
-    // LOGIN
+    // LOGIN (UPDATED - NO AuthenticationManager)
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> request) {
 
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.get("email"),
-                            request.get("password")
-                    )
-            );
-        } catch (Exception e) {
+        String email = request.get("email");
+        String password = request.get("password");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!userService.checkPassword(password, user.getPassword())) {
             throw new RuntimeException("Invalid email or password");
         }
-
-        User user = userRepository.findByEmail(request.get("email"))
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtUtil.generateToken(
                 user.getEmail(),
