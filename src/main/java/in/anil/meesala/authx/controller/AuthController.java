@@ -1,9 +1,13 @@
 package in.anil.meesala.authx.controller;
 
+import in.anil.meesala.authx.dto.RegisterRequest;
+import in.anil.meesala.authx.dto.UserResponse;
 import in.anil.meesala.authx.entity.User;
 import in.anil.meesala.authx.repository.UserRepository;
 import in.anil.meesala.authx.security.JwtUtil;
 import in.anil.meesala.authx.service.UserService;
+
+import jakarta.validation.Valid;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +35,19 @@ public class AuthController {
         this.userService = userService;
     }
 
+    // REGISTER
+    @PostMapping("/register")
+    public UserResponse register(@Valid @RequestBody RegisterRequest request) {
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        return userService.registerUser(user);
+    }
+
+    // LOGIN
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> request) {
 
@@ -57,6 +74,7 @@ public class AuthController {
         );
     }
 
+    // ✅ CHANGE PASSWORD
     @PostMapping("/change-password")
     public Map<String, String> changePassword(
             @RequestBody Map<String, String> request,
