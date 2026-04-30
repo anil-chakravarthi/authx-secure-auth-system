@@ -78,7 +78,6 @@ public class UserService {
         return mapToUserResponse(user);
     }
 
-    // Add this method (used by AuthController)
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }

@@ -42,7 +42,7 @@ public class AuthController {
         return userService.registerUser(user);
     }
 
-    // LOGIN (UPDATED - NO AuthenticationManager)
+    // Login
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> request) {
 
@@ -50,10 +50,10 @@ public class AuthController {
         String password = request.get("password");
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!userService.checkPassword(password, user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
+            throw new IllegalArgumentException("Invalid email or password");
         }
 
         String token = jwtUtil.generateToken(
@@ -68,7 +68,7 @@ public class AuthController {
                 "loginTime", System.currentTimeMillis()
         );
     }
-
+    
     // CHANGE PASSWORD
     @PostMapping("/change-password")
     public Map<String, String> changePassword(
