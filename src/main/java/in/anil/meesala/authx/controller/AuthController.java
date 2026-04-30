@@ -1,18 +1,21 @@
 package in.anil.meesala.authx.controller;
 
+import java.util.Map;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import in.anil.meesala.authx.dto.RegisterRequest;
 import in.anil.meesala.authx.dto.UserResponse;
 import in.anil.meesala.authx.entity.User;
+import in.anil.meesala.authx.exception.InvalidCredentialsException;
 import in.anil.meesala.authx.repository.UserRepository;
 import in.anil.meesala.authx.security.JwtUtil;
 import in.anil.meesala.authx.service.UserService;
-
 import jakarta.validation.Valid;
-
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -49,11 +52,16 @@ public class AuthController {
         String email = request.get("email");
         String password = request.get("password");
 
+        // Safety check
+        if (email == null || password == null) {
+            throw new InvalidCredentialsException("Email and password are required");
+        }
+
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         if (!userService.checkPassword(password, user.getPassword())) {
-            throw new IllegalArgumentException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         String token = jwtUtil.generateToken(
@@ -68,7 +76,7 @@ public class AuthController {
                 "loginTime", System.currentTimeMillis()
         );
     }
-
+    
     // CHANGE PASSWORD
     @PostMapping("/change-password")
     public Map<String, String> changePassword(
