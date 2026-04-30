@@ -6,7 +6,6 @@ import in.anil.meesala.authx.entity.User;
 import in.anil.meesala.authx.repository.UserRepository;
 import in.anil.meesala.authx.security.JwtUtil;
 import in.anil.meesala.authx.service.UserService;
-import in.anil.meesala.authx.exception.InvalidCredentialsException;
 
 import jakarta.validation.Valid;
 
@@ -31,6 +30,7 @@ public class AuthController {
         this.userService = userService;
     }
 
+    // REGISTER
     @PostMapping("/register")
     public UserResponse register(@Valid @RequestBody RegisterRequest request) {
 
@@ -42,6 +42,7 @@ public class AuthController {
         return userService.registerUser(user);
     }
 
+    // LOGIN
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> request) {
 
@@ -49,10 +50,10 @@ public class AuthController {
         String password = request.get("password");
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
         if (!userService.checkPassword(password, user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid credentials");
+            throw new IllegalArgumentException("Invalid credentials");
         }
 
         String token = jwtUtil.generateToken(
@@ -68,6 +69,7 @@ public class AuthController {
         );
     }
 
+    // CHANGE PASSWORD
     @PostMapping("/change-password")
     public Map<String, String> changePassword(
             @RequestBody Map<String, String> request,

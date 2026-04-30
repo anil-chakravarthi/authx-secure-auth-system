@@ -1,79 +1,61 @@
 package in.anil.meesala.authx.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.web.bind.MethodArgumentNotValidException;
-
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // User not found
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(
             UserNotFoundException ex,
             HttpServletRequest request) {
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                ex.getMessage(),
-                request.getRequestURI()
+        return new ResponseEntity<>(
+                new ErrorResponse(404, ex.getMessage(), request.getRequestURI()),
+                HttpStatus.NOT_FOUND
         );
-
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    // User already exists
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserExists(
             UserAlreadyExistsException ex,
             HttpServletRequest request) {
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.CONFLICT.value(),
-                ex.getMessage(),
-                request.getRequestURI()
+        return new ResponseEntity<>(
+                new ErrorResponse(409, ex.getMessage(), request.getRequestURI()),
+                HttpStatus.CONFLICT
         );
-
-        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
-    // Invalid credentials (LOGIN FIX)
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(
             InvalidCredentialsException ex,
             HttpServletRequest request) {
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.UNAUTHORIZED.value(),
-                ex.getMessage(),
-                request.getRequestURI()
+        return new ResponseEntity<>(
+                new ErrorResponse(401, ex.getMessage(), request.getRequestURI()),
+                HttpStatus.UNAUTHORIZED
         );
-
-        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
     }
 
-    // Illegal arguments (extra safety)
+    // 🔥 IMPORTANT (handles login errors)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(
             IllegalArgumentException ex,
             HttpServletRequest request) {
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage(),
-                request.getRequestURI()
+        return new ResponseEntity<>(
+                new ErrorResponse(401, ex.getMessage(), request.getRequestURI()),
+                HttpStatus.UNAUTHORIZED
         );
-
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    // Validation errors (DTO validation)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex,
@@ -85,29 +67,20 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                errorMessage,
-                request.getRequestURI()
+        return new ResponseEntity<>(
+                new ErrorResponse(400, errorMessage, request.getRequestURI()),
+                HttpStatus.BAD_REQUEST
         );
-
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    // Fallback (VERY IMPORTANT — keep last)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(
             Exception ex,
             HttpServletRequest request) {
 
-        ex.printStackTrace(); // helps debug in logs
-
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Something went wrong",
-                request.getRequestURI()
+        return new ResponseEntity<>(
+                new ErrorResponse(500, "Something went wrong", request.getRequestURI()),
+                HttpStatus.INTERNAL_SERVER_ERROR
         );
-
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
